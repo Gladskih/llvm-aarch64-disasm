@@ -1,0 +1,67 @@
+{
+  "name": "llvm-aarch64-disasm",
+  "version": "0.1.0",
+  "description": "AArch64 disassembler with structured instruction and LLVM feature metadata, powered by prebuilt WebAssembly",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./llvm-aarch64.wasm": "./dist/llvm-aarch64.wasm"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/features.js",
+    "dist/llvm-aarch64.js",
+    "dist/llvm-aarch64.wasm",
+    "dist/build-info.json",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses/LLVM.txt",
+    "licenses/compiler-rt.txt",
+    "licenses/emscripten-AUTHORS.txt",
+    "licenses/emscripten-LICENSE.txt",
+    "licenses/libcxx.txt",
+    "licenses/musl.txt",
+    "docs/metadata.md",
+    "upstream.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/copy-artifacts.mjs",
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:browser": "playwright test",
+    "prepack": "npm run build && node scripts/verify-package.mjs",
+    "verify:package": "node scripts/verify-package.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1",
+    "typescript": "5.9.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gladskih/llvm-aarch64-disasm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Gladskih/llvm-aarch64-disasm/issues"
+  },
+  "homepage": "https://github.com/Gladskih/llvm-aarch64-disasm#readme",
+  "keywords": [
+    "aarch64",
+    "arm64",
+    "disassembler",
+    "disassembly",
+    "llvm",
+    "webassembly",
+    "wasm",
+    "typescript",
+    "instruction-set"
+  ],
+  "types": "./dist/index.d.ts"
+}

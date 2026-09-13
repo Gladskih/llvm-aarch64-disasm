@@ -1,0 +1,73 @@
+name: Rebuild LLVM WASM
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      cold:
+        description: Ignore existing build caches for a full clean rebuild
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  wasm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      JOBS: '4'
+      EXPECTED_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build build-essential python3 curl
+      - uses: actions/cache@v6
+        if: ${{ !inputs.cold }}
+        with:
+          path: .build/sources
+          key: llvm-source-v1-${{ runner.os }}-${{ hashFiles('upstream.json') }}
+      - uses: actions/cache@v6
+        if: ${{ !inputs.cold }}
+        with:
+          path: .build/emsdk
+          key: emsdk-v1-${{ runner.os }}-${{ hashFiles('upstream.json') }}
+      - uses: actions/cache@v6
+        if: ${{ !inputs.cold }}
+        with:
+          path: .build/state
+          key: llvm-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('upstream.json', 'scripts/build-wasm.sh', 'native/CMakeLists.txt', 'scripts/prepare-mc.mjs') }}
+      - run: npm ci
+      - name: Build pinned runtime, metadata and package
+        run: npm run build:wasm
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run verify:package
+      - run: npm pack --dry-run
+      - name: Pack and inspect exact release tarball
+        run: |
+          npm pack --ignore-scripts --json > pack-result.json
+          node scripts/inspect-tarball.mjs
+          node scripts/test-tarball.mjs
+          sha256sum llvm-aarch64-disasm-0.1.0.tgz > package.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: llvm-aarch64-package-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            *.tgz
+            package.sha256
+            pack-result.json
+            artifacts/build-info.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: llvm-aarch64-footprint-${{ github.sha }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: |
+            .build/state/*/bridge/llvm-aarch64.map
+            .build/state/*/bridge/archive-inputs.tsv

@@ -1,0 +1,7 @@
+{
+  "llvmVersion": "21.1.8",
+  "llvmCommit": "2078da43e25a4623cab2d0d60decddf709aaea28",
+  "llvmArchiveSha256": "536a4d64ab21bc85bf95ae4dc412b36e8a9c72d487a476839f3c31c3ded69e96",
+  "emscriptenVersion": "4.0.23",
+  "emsdkCommit": "c0bb220cb6e6f4e0fabb6f6db9efd53390ef5e56"
+}
