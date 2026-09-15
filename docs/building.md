@@ -29,7 +29,7 @@ Every push and pull request invokes the shared WASM workflow: build once, run No
 
 CI separately caches LLVM sources, emsdk/toolchain, and reusable host `llvm-tblgen` plus WASM/bridge CMake state. Keys depend on pins and native build configuration, not README or TypeScript edits. Local source directories include the LLVM commit/archive hash; CMake state directories include the pins and build configuration hash. New pins therefore select compatible state automatically, and an existing emsdk checkout fetches missing pinned commits. Old cache directories may be removed when no longer needed. Warm builds still regenerate metadata, check footprint/licenses, and write fresh provenance.
 
-Release `0.1.0` by downloading the package artifact from successful CI for the final clean commit, verifying its checksum and `build-info.json` source commit, and repeating the tarball smoke check. Confirm `npm whoami` and that the version is absent, then publish that exact tarball with `npm publish ./llvm-aarch64-disasm-0.1.0.tgz --access public --ignore-scripts`. Test the registry package using `node scripts/test-tarball.mjs llvm-aarch64-disasm@0.1.0`. Consumers never run LLVM, Emscripten, CMake, Python, or native compilers. LLVM/Emscripten update automation is intentionally deferred.
+Release `0.2.0` by downloading the package artifact from successful CI for the final clean commit, verifying its checksum and `build-info.json` source commit, and repeating the tarball smoke check. Confirm `npm whoami` and that the version is absent, then publish that exact tarball with `npm publish ./llvm-aarch64-disasm-0.2.0.tgz --access public --ignore-scripts`. Test the registry package using `node scripts/test-tarball.mjs llvm-aarch64-disasm@0.2.0`. Consumers never run LLVM, Emscripten, CMake, Python, or native compilers. LLVM/Emscripten update automation is intentionally deferred.
 
 The MC adapter in `scripts/prepare-mc.mjs` replaces broad target-MC registration with the six factories used by the public API. It preserves LLVM's standard printer and instruction analysis. It retains generated feature data and hardware-mode behavior for `generic,+all`, but replaces scheduling data with LLVM's default empty model. Adaptation happens in the build directory; the upstream checkout is not patched. Its source-hash and structure checks must be reviewed when updating LLVM.
 
@@ -52,3 +52,4 @@ node scripts/compare-decoders.mjs /path/to/saved-dist/index.js "$BUILD_DIR/sourc
 ```
 
 The saved directory must include its loader, WASM, and feature metadata. If `BUILD_DIR` is unset, use `.build` for the LLVM source path.
+

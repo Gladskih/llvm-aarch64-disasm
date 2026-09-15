@@ -36,6 +36,7 @@ try {
     }
     const d = await createDisassembler();
     assert.equal(d.decode(new Uint8Array([0xc0, 3, 0x5f, 0xd6]))[0].mnemonic, 'ret');
+    assert.equal(d.decodeMetadata(new Uint8Array([0xc0, 3, 0x5f, 0xd6]))[0].controlFlow, 'return');
     console.log('Consumer smoke passed: prebuilt runtime and licenses present; ret decoded');
   `);
   run(process.execPath, ['check.mjs']);

@@ -1,6 +1,6 @@
 {
   "name": "llvm-aarch64-disasm",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AArch64 disassembler with structured instruction and LLVM feature metadata, powered by prebuilt WebAssembly",
   "type": "module",
   "license": "MIT",

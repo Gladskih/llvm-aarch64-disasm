@@ -47,3 +47,31 @@ Requires modern ES modules, WebAssembly, and BigInt (Node 20+ is also supported)
 [`upstream.json`](upstream.json) pins LLVM 21.1.8 by commit and source archive SHA-256, and Emscripten 4.0.23 by SDK commit/version. Git contains sources and required notices only. CI reproducibly builds the runtime and metadata from these pins, tests the complete package, and produces the prebuilt npm tarball. No installation lifecycle scripts or native tools are needed by npm consumers. To build the WASM and package from a clean checkout, run `npm run build:wasm` on Linux or WSL after installing the [build prerequisites](docs/building.md). That guide also covers development tests, package verification, and CI.
 
 Original wrapper code is MIT; LLVM and generated LLVM artifacts are Apache-2.0 WITH LLVM-exception. Redistribute [LICENSE](LICENSE), [licenses/LLVM.txt](licenses/LLVM.txt), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with the package and follow their attribution/notice requirements. The build adapts LLVM's MC initialization to omit unused subsystems; decoding remains upstream LLVM.
+
+## Metadata-only decoding
+
+`createDisassembler()` also returns `decodeMetadata(bytes, { address })` for ISA scans
+and control-flow traversal. It uses the same LLVM decoder, permissive `+all` mode,
+feature requirements, statuses, lengths, address wrapping and truncated-tail behavior
+as `decode()`. Successful results contain `offset`, `address`, `length`,
+`bytesConsumed`, `status`, `opcode`, `features`, `controlFlow` and optional `target`.
+It omits `text`, `mnemonic`, `opcodeName` and `operands`.
+
+This path avoids instruction printing, operand materialization and JSON serialization.
+The private WASM bridge returns seven little-endian 32-bit fields, copied before the
+next call. Feature metadata is cached by LLVM opcode, with opcode names resolved only
+on first use. Results own their scalar values and share immutable feature metadata.
+`Disassembler` remains the existing text-decoder interface; `MetadataDisassembler`
+extends it with the new method. No disposal or persistent input buffer is required.
+
+## Full decoding performance
+
+`decode()` retains its complete result contract, including assembly text, mnemonic,
+opcode name, raw MC operands, feature requirements and control flow. It now uses
+binary WASM result records instead of JSON. Register and opcode names are cached;
+signed immediate values are transferred as 64-bit integers without decimal conversion.
+Returned objects own their text and operands and remain valid after subsequent calls.
+
+Use `decode()` when details are needed, or `decodeMetadata()` when scanning ISA usage.
+Both decode each instruction once. Full decoding still performs LLVM instruction
+printing and allocates operand objects, so metadata-only scanning remains faster.

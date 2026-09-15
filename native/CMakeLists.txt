@@ -31,7 +31,7 @@ target_link_options(llvm-aarch64 PRIVATE
   "-sMODULARIZE=1" "-sEXPORT_ES6=1" "-sENVIRONMENT=web,worker,node"
   "-sALLOW_MEMORY_GROWTH=1" "-sFILESYSTEM=0" "-sASSERTIONS=0"
   "-sSTACK_SIZE=1048576"
-  "-sEXPORTED_FUNCTIONS=['_decode','_malloc','_free']"
+  "-sEXPORTED_FUNCTIONS=['_decode_full','_decode_metadata','_opcode_name']"
   "-sEXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPU8']")
 set_target_properties(llvm-aarch64 PROPERTIES SUFFIX ".js")
 file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/linked-libraries.txt" CONTENT "${LLVM_LIBS}\n")

@@ -38,3 +38,18 @@ test('module workers load WASM and return structured data', async ({ page }) => 
   }));
   expect(result).toEqual({ status: 'success', target: '4104', kind: 'call' });
 });
+
+test('browser metadata decoding matches full decoding', async ({ page }) => {
+  await page.goto('/test/browser.html');
+  const result = await page.evaluate(async () => {
+    const { createDisassembler } = await import('/dist/index.js');
+    const decoder = await createDisassembler();
+    const bytes = new Uint8Array([2, 0, 0, 0x14, 0xff]);
+    const compact = ({ text, mnemonic, operands, opcodeName, ...metadata }) => metadata;
+    return {
+      metadata: decoder.decodeMetadata(bytes, { address: 0xfffffffffffffffcn }),
+      full: decoder.decode(bytes, { address: 0xfffffffffffffffcn }).map(compact)
+    };
+  });
+  expect(result.metadata).toEqual(result.full);
+});

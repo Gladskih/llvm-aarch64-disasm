@@ -53,7 +53,7 @@ jobs:
           npm pack --ignore-scripts --json > pack-result.json
           node scripts/inspect-tarball.mjs
           node scripts/test-tarball.mjs
-          sha256sum llvm-aarch64-disasm-0.1.0.tgz > package.sha256
+          sha256sum "$(node -p 'JSON.parse(require("fs").readFileSync("pack-result.json", "utf8"))[0].filename')" > package.sha256
       - uses: actions/upload-artifact@v7
         with:
           name: llvm-aarch64-package-${{ github.sha }}

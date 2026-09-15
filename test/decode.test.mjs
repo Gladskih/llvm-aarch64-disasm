@@ -131,3 +131,32 @@ test('accepts Uint8Array views from another realm without accepting other view t
   for (const value of [new Uint8ClampedArray(4), new Int8Array(4), new DataView(new ArrayBuffer(4))])
     assert.throws(() => decoder.decode(value), TypeError);
 });
+
+test('full decoding no longer serializes instructions through JSON', () => {
+  const expected = decoder.decode(word(0x91000420));
+  const parse = JSON.parse;
+  try {
+    JSON.parse = () => { throw new Error('JSON instruction transport'); };
+    assert.deepEqual(decoder.decode(word(0x91000420)), expected);
+  } finally {
+    JSON.parse = parse;
+  }
+});
+
+test('full results own their strings and operands across subsequent calls', () => {
+  const first = decoder.decode(word(0x97ffffff), { address: 0x123456789000n });
+  const saved = structuredClone(first);
+  decoder.decode(word(0xa9400020));
+  decoder.decode(word(0xffffffff));
+  assert.deepEqual(first, saved);
+});
+
+test('binary full results preserve signed MC immediates independently of wrapped targets', () => {
+  // LLVM AArch64 BL: signed imm26 counts words; the printer scales it by four.
+  // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.8/llvm/lib/Target/AArch64/AArch64InstrFormats.td
+  const result = decode(0x97ffffff);
+  assert.equal(result.opcodeName, 'BL');
+  assert.equal(result.text, 'bl #-4');
+  assert.equal(result.target, 0xfffffffffffffffen - 2n);
+  assert.deepEqual(result.operands, [{ kind: 'immediate', value: -1n }]);
+});
