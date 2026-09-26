@@ -44,7 +44,7 @@ const offline = await createDisassembler({ wasmBinary });
 
 Requires modern ES modules, WebAssembly, and BigInt (Node 20+ is also supported). Use a Web Worker for large synchronous decode operations. CSP must allow WebAssembly compilation.
 
-[`upstream.json`](upstream.json) pins LLVM 21.1.8 by commit and source archive SHA-256, and Emscripten 4.0.23 by SDK commit/version. Git contains sources and required notices only. CI reproducibly builds the runtime and metadata from these pins, tests the complete package, and produces the prebuilt npm tarball. No installation lifecycle scripts or native tools are needed by npm consumers. To build the WASM and package from a clean checkout, run `npm run build:wasm` on Linux or WSL after installing the [build prerequisites](docs/building.md). That guide also covers development tests, package verification, and CI.
+[`upstream.json`](upstream.json) pins LLVM 21.1.8 by commit and source archive SHA-256, and Emscripten 4.0.23 by SDK commit/version. Git contains sources and required notices only. CI reproducibly builds the runtime and metadata from these pins, tests the complete package, and produces the prebuilt npm tarball. No installation lifecycle scripts or native tools are needed by npm consumers. To build the WASM and package from a clean checkout, run `npm run build:wasm` on Linux or WSL with the prerequisites below.
 
 Original wrapper code is MIT; LLVM and generated LLVM artifacts are Apache-2.0 WITH LLVM-exception. Redistribute [LICENSE](LICENSE), [licenses/LLVM.txt](licenses/LLVM.txt), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with the package and follow their attribution/notice requirements. The build adapts LLVM's MC initialization to omit unused subsystems; decoding remains upstream LLVM.
 
@@ -75,3 +75,33 @@ Returned objects own their text and operands and remain valid after subsequent c
 Use `decode()` when details are needed, or `decodeMetadata()` when scanning ISA usage.
 Both decode each instruction once. Full decoding still performs LLVM instruction
 printing and allocates operand objects, so metadata-only scanning remains faster.
+
+## Building
+
+On Linux or WSL, install Git, curl, Python 3, CMake 3.20+, Ninja, a host C++
+compiler, and Node.js 20+, then run:
+
+```sh
+npm ci
+npm run build:wasm
+npm test
+npx playwright install chromium
+npm run test:browser
+npm run verify:package
+npm pack --ignore-scripts --json > pack-result.json
+node scripts/inspect-tarball.mjs
+node scripts/test-tarball.mjs
+```
+
+`BUILD_DIR` selects the build directory; `JOBS` limits parallelism (default 4).
+In WSL, prefer a Linux-filesystem build directory over `/mnt/c`.
+`upstream.json` pins the LLVM source archive and Emscripten SDK. Generated
+runtime and metadata are ignored; `npm test` rebuilds TypeScript without
+rebuilding LLVM. CI verifies licenses, the MC link footprint, Node/browser
+behavior, package contents, and installation of the exact tarball.
+`dist/build-info.json` records sizes, hashes, toolchain pins, and source commit.
+
+The build registers only the MC factories used by this API and removes CPU
+scheduling models. Decoding and the standard printer remain upstream LLVM.
+See [adapter rationale](docs/metadata.md) and
+[measured size reductions and decoder comparisons](docs/experiments.md).
