@@ -131,7 +131,8 @@ compatibility line (minor for 0.x, major for 1.0+), and dispatches the normal pu
 workflow on an isolated candidate branch. That workflow runs the complete existing
 build/test/package gate before merging a PR, creating the version tag and publishing
 the exact tested archive with npm OIDC/provenance. Source/schema or license changes
-that fail CI stop publication; fix the candidate and rerun its publish workflow.
+that fail CI stop publication. Apply compatibility fixes on main, then recreate the
+single-commit pin/version candidate on that main and rerun its publish workflow.
 If main advances, rebase and recheck the candidate. Toolchain pins (Emscripten, Rust,
 Binaryen, wasm-bindgen and build helpers) remain independent of this library watcher.
 

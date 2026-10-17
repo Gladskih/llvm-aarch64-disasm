@@ -8,8 +8,9 @@ const branch = process.env.GITHUB_REF_NAME;
 assert(/^automation\/upstream-[a-f0-9]{40}$/.test(branch), "Unexpected upstream candidate branch");
 const sha = run("rev-parse", "HEAD");
 assert.equal(sha, process.env.GITHUB_SHA, "Candidate moved after verification");
-run("fetch", "origin", "main", branch);
-assert.equal(run("rev-parse", "origin/" + branch), sha, "Candidate branch changed");
+run("fetch", "origin", "main");
+const candidate = run("ls-remote", "origin", "refs/heads/" + branch);
+if (candidate) assert.equal(candidate.split(/\s+/)[0], sha, "Candidate branch changed");
 const base = run("rev-parse", "HEAD^");
 const changed = run("diff", "--name-only", base, sha).split("\n").sort();
 assert(changed.every(path => ["package-lock.json", "package.json", "upstream.json",
@@ -30,6 +31,7 @@ if (remote) {
 const merged = execFileSync("git", ["merge-base", sha, "origin/main"],
   { encoding: "utf8" }).trim() === sha;
 if (!merged) {
+  assert(candidate, "Candidate branch missing before merge");
   assert.equal(run("rev-parse", "origin/main"), base, "Main changed; rebase and recheck the candidate");
   const existing = JSON.parse(execFileSync("gh", ["pr", "list", "--head", branch,
     "--state", "open", "--json", "number"], { encoding: "utf8" }));
