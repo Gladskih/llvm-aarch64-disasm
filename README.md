@@ -101,6 +101,14 @@ rebuilding LLVM. CI verifies licenses, the MC link footprint, Node/browser
 behavior, package contents, and installation of the exact tarball.
 `dist/build-info.json` records sizes, hashes, toolchain pins, and source commit.
 
+Releases use tags matching the package version, for example `v0.2.1`. The publish
+workflow rebuilds from the pinned sources, runs Node/browser and package checks,
+and tests the exact tarball on Linux and Windows with Node 20/22/24/26. Only then
+does npm Trusted Publishing authorize publication through `publish.yml`, with
+provenance enabled explicitly and no long-lived npm token. Existing versions
+must have identical archive integrity before a release can be reused. GitHub
+releases attach the tested tarball, SHA-256 checksum and build manifest.
+
 The build registers only the MC factories used by this API and removes CPU
 scheduling models. Decoding and the standard printer remain upstream LLVM.
 See [adapter rationale](docs/metadata.md) and

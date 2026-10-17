@@ -1,0 +1,58 @@
+name: Publish package
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/wasm.yml
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      EXPECTED_COMMIT: ${{ github.sha }}
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: llvm-aarch64-package-${{ github.sha }}
+      - name: Verify release tag and tested artifact
+        run: |
+          test "$GITHUB_REF_TYPE" = tag
+          test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
+          sha256sum --check package.sha256
+          node scripts/test-tarball.mjs
+      - name: Check immutable npm release
+        id: registry
+        run: node scripts/check-release.mjs
+      - name: Publish tested tarball using npm Trusted Publishing
+        if: steps.registry.outputs.exists == 'false'
+        run: npm publish "$(node -p 'require("./pack-result.json")[0].filename')" --ignore-scripts --access public --provenance
+      - name: Create GitHub release
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" *.tgz package.sha256 artifacts/build-info.json --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" *.tgz package.sha256 artifacts/build-info.json --generate-notes
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
