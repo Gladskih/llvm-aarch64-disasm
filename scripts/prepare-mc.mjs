@@ -11,9 +11,6 @@ assert([
   '3b4c2232418874f815b9b39d7dd572f0ad7d6302bfd8a582e85245bdc50077d5',
   '17c93eeb3addcdb3765b781e756a994789caca1fe26b7cc9da4c179c70cb61ff',
 ].includes(createHash('sha256').update(cpp).digest('hex')),
-  '3b4c2232418874f815b9b39d7dd572f0ad7d6302bfd8a582e85245bdc50077d5',
-  '17c93eeb3addcdb3765b781e756a994789caca1fe26b7cc9da4c179c70cb61ff',
-].includes(createHash('sha256').update(cpp).digest('hex')),
   'Review the MC adapter when changing the pinned LLVM source');
 const marker = '// Force static initialization.';
 assert.equal(cpp.split(marker).length, 2);
