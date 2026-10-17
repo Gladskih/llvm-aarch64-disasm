@@ -48,7 +48,11 @@ struct Decoder {
     // LLVM's intended permissive disassembly mode, not a real processor.
     subtarget.reset(target->createMCSubtargetInfo(factoryTriple, "generic", "+all"));
     instructions.reset(target->createMCInstrInfo());
+#if LLVM_VERSION_MAJOR >= 23
+    context = std::make_unique<MCContext>(triple, *assembly, *registers, *subtarget);
+#else
     context = std::make_unique<MCContext>(triple, assembly.get(), registers.get(), subtarget.get());
+#endif
     disassembler.reset(target->createMCDisassembler(*subtarget, *context));
     printer.reset(target->createMCInstPrinter(triple, 0, *assembly, *instructions, *registers));
     analysis.reset(target->createMCInstrAnalysis(instructions.get()));

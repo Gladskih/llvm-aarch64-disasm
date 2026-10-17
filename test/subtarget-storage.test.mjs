@@ -4,7 +4,7 @@ import { subtargetStorage } from "../scripts/subtarget-storage.mjs";
 
 // Synthetic excerpt following llvmorg-23.1.3's SubtargetEmitter.cpp:
 // featureKeyValues(), cpuKeyValues(), emitGenMCSubtargetInfo().
-const features = `extern const llvm::SubtargetFeatureKVStorage< 1, 9> X86FeatureKVStorage = {
+const features = `extern const llvm::SubtargetFeatureKVStorage< 1, 10> X86FeatureKVStorage = {
   {
     { sizeof(SubtargetFeatureKV) * 1 + 1, sizeof(SubtargetFeatureKV) * 1 + 1,
       X86::FeatureTest, { 0x2 } },
