@@ -50,6 +50,7 @@ emcmake cmake -S "$SOURCE/llvm" -B "$STATE/wasm" "${COMMON[@]}" \
   -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten -DLLVM_DEFAULT_TARGET_TRIPLE=aarch64-none-unknown \
   -DLLVM_TABLEGEN="$STATE/host/bin/llvm-tblgen" -DLLVM_ENABLE_THREADS=OFF \
   -DLLVM_ENABLE_BACKTRACES=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF \
+  -DLLVM_INCLUDE_TOOLS=OFF \
   -DCMAKE_C_FLAGS_RELEASE='-Oz -DNDEBUG -flto' -DCMAKE_CXX_FLAGS_RELEASE='-Oz -DNDEBUG -flto'
 cmake --build "$STATE/wasm" --target LLVMAArch64Disassembler LLVMAArch64Desc LLVMAArch64Info -j "$JOBS"
 emcmake cmake -S "$ROOT/native" -B "$STATE/bridge" -G Ninja \
