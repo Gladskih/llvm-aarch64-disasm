@@ -35,8 +35,11 @@ test('prebuilt artifact provenance matches the pinned source and binary', async 
   const wasm = await readFile('dist/llvm-aarch64.wasm');
   assert.equal(wasm.length, info.wasmBytes);
   assert.equal(createHash('sha256').update(wasm).digest('hex'), info.wasmSha256);
-  assert.deepEqual(info.linkedLibraries, [
+  const libraries = [
     'LLVMAArch64Desc', 'LLVMAArch64Disassembler', 'LLVMAArch64Info', 'LLVMAArch64Utils',
     'LLVMBinaryFormat', 'LLVMMC', 'LLVMMCDisassembler', 'LLVMSupport', 'LLVMTargetParser',
-  ]);
+  ];
+  // LLVM 23 llvm/lib/MC/CMakeLists.txt explicitly links this low-level CFI component.
+  if (Number(pins.llvmVersion.split('.')[0]) >= 23) libraries.push('LLVMDebugInfoDWARFLowLevel');
+  assert.deepEqual(info.linkedLibraries, libraries.sort());
 });
