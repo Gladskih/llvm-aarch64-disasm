@@ -46,4 +46,15 @@ if (!remote) {
   run("tag", "-a", tag, sha, "-m", "Release " + tag);
   execFileSync("git", ["push", "origin", tag], { stdio: "inherit" });
 }
+const candidateRef = "refs/heads/" + branch;
+const remaining = run("ls-remote", "origin", candidateRef);
+if (remaining) {
+  assert.equal(remaining.split(/\s+/)[0], sha, "Candidate changed after merge; keep it for review");
+  try {
+    execFileSync("git", ["push", "--force-with-lease=" + candidateRef + ":" + sha,
+      "origin", ":" + candidateRef], { stdio: "inherit" });
+  } catch (error) {
+    if (run("ls-remote", "origin", candidateRef)) throw error;
+  }
+}
 await appendFile(process.env.GITHUB_ENV, "RELEASE_TAG=" + tag + "\n");
