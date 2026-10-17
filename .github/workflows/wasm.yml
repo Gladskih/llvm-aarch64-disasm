@@ -39,7 +39,7 @@ jobs:
         if: ${{ !inputs.cold }}
         with:
           path: .build/state
-          key: llvm-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('upstream.json', 'scripts/build-wasm.sh', 'native/CMakeLists.txt', 'scripts/prepare-mc.mjs') }}
+          key: llvm-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('upstream.json', 'scripts/build-wasm.sh', 'native/CMakeLists.txt', 'scripts/prepare-mc.mjs', 'scripts/subtarget-storage.mjs') }}
       - name: Verify release maintenance
         run: node --test test/release-assets.test.mjs test/upstream-release.test.mjs test/upstream-promotion.test.mjs test/registry-release.test.mjs
       - run: npm ci

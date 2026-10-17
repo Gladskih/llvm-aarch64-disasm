@@ -1,4 +1,5 @@
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
@@ -37,10 +38,15 @@ struct Decoder {
     LLVMInitializeAArch64Disassembler();
     std::string error;
     const auto *target = TargetRegistry::lookupTarget(triple, error);
-    registers.reset(target->createMCRegInfo(triple.str()));
-    assembly.reset(target->createMCAsmInfo(*registers, triple.str(), MCTargetOptions{}));
+#if LLVM_VERSION_MAJOR >= 23
+    const auto &factoryTriple = triple;
+#else
+    const auto &factoryTriple = triple.str();
+#endif
+    registers.reset(target->createMCRegInfo(factoryTriple));
+    assembly.reset(target->createMCAsmInfo(*registers, factoryTriple, MCTargetOptions{}));
     // LLVM's intended permissive disassembly mode, not a real processor.
-    subtarget.reset(target->createMCSubtargetInfo(triple.str(), "generic", "+all"));
+    subtarget.reset(target->createMCSubtargetInfo(factoryTriple, "generic", "+all"));
     instructions.reset(target->createMCInstrInfo());
     context = std::make_unique<MCContext>(triple, assembly.get(), registers.get(), subtarget.get());
     disassembler.reset(target->createMCDisassembler(*subtarget, *context));
