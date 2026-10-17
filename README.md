@@ -2,7 +2,7 @@
 
 An AArch64 (A64) disassembler for JavaScript and TypeScript, powered by upstream LLVM MC compiled to WebAssembly. Returns **structured instruction data, control-flow information, and LLVM-derived architectural feature requirements**. Ships with prebuilt WASM and requires no native toolchain at install time.
 
-AArch64 (A64) only. Supports little-endian instruction words, including the extensions understood by LLVM 21.1.8.
+AArch64 (A64) only. Supports little-endian instruction words, including the extensions understood by the pinned LLVM revision.
 
 ```sh
 npm install llvm-aarch64-disasm
@@ -44,7 +44,7 @@ const offline = await createDisassembler({ wasmBinary });
 
 Requires modern ES modules, WebAssembly, and BigInt (Node 20+ is also supported). Use a Web Worker for large synchronous decode operations. CSP must allow WebAssembly compilation.
 
-[`upstream.json`](upstream.json) pins LLVM 21.1.8 by commit and source archive SHA-256, and Emscripten 4.0.23 by SDK commit/version. Git contains sources and required notices only. CI reproducibly builds the runtime and metadata from these pins, tests the complete package, and produces the prebuilt npm tarball. No installation lifecycle scripts or native tools are needed by npm consumers. To build the WASM and package from a clean checkout, run `npm run build:wasm` on Linux or WSL with the prerequisites below.
+[`upstream.json`](upstream.json) pins LLVM by commit and source archive SHA-256, and Emscripten by SDK commit/version. Git contains sources and required notices only. CI reproducibly builds the runtime and metadata from these pins, tests the complete package, and produces the prebuilt npm tarball. No installation lifecycle scripts or native tools are needed by npm consumers. To build the WASM and package from a clean checkout, run `npm run build:wasm` on Linux or WSL with the prerequisites below.
 
 Original wrapper code is MIT; LLVM and generated LLVM artifacts are Apache-2.0 WITH LLVM-exception. Redistribute [LICENSE](LICENSE), [licenses/LLVM.txt](licenses/LLVM.txt), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with the package and follow their attribution/notice requirements. The build adapts LLVM's MC initialization to omit unused subsystems; decoding remains upstream LLVM.
 
@@ -101,7 +101,7 @@ rebuilding LLVM. CI verifies licenses, the MC link footprint, Node/browser
 behavior, package contents, and installation of the exact tarball.
 `dist/build-info.json` records sizes, hashes, toolchain pins, and source commit.
 
-Releases use tags matching the package version, for example `v0.2.1`. The publish
+Releases use tags matching the package version, as `v<package-version>`. The publish
 workflow rebuilds from the pinned sources, runs Node/browser and package checks,
 and tests the exact tarball on Linux and Windows with Node 20/22/24/26. Only then
 does npm Trusted Publishing authorize publication through `publish.yml`, with
@@ -131,7 +131,8 @@ compatibility line (minor for 0.x, major for 1.0+), and dispatches the normal pu
 workflow on an isolated candidate branch. That workflow runs the complete existing
 build/test/package gate before merging a PR, creating the version tag and publishing
 the exact tested archive with npm OIDC/provenance. Source/schema or license changes
-that fail CI stop publication; fix the candidate and rerun its publish workflow.
+that fail CI stop publication. Apply compatibility fixes on main, then recreate the
+single-commit pin/version candidate on that main and rerun its publish workflow.
 If main advances, rebase and recheck the candidate. Toolchain pins (Emscripten, Rust,
 Binaryen, wasm-bindgen and build helpers) remain independent of this library watcher.
 

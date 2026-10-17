@@ -8,7 +8,7 @@ JOBS=${JOBS:-4}
 readarray -t PINS < <(python3 -c 'import json,sys; p=json.load(open(sys.argv[1])); print(p["llvmCommit"]); print(p["emsdkCommit"]); print(p["emscriptenVersion"]); print(p["llvmArchiveSha256"])' "$ROOT/upstream.json")
 SOURCE="$BUILD/sources/llvm-${PINS[0]}-${PINS[3]}"
 # Separate incompatible CMake/toolchain states without requiring manual cleanup.
-CONFIG_KEY=$(cat "$ROOT/upstream.json" "$ROOT/scripts/build-wasm.sh" "$ROOT/native/CMakeLists.txt" "$ROOT/scripts/prepare-mc.mjs" | sha256sum | cut -d' ' -f1)
+CONFIG_KEY=$(cat "$ROOT/upstream.json" "$ROOT/scripts/build-wasm.sh" "$ROOT/native/CMakeLists.txt" "$ROOT/scripts/prepare-mc.mjs" "$ROOT/scripts/subtarget-storage.mjs" | sha256sum | cut -d' ' -f1)
 STATE="$BUILD/state/$CONFIG_KEY"
 mkdir -p "$BUILD/sources" "$STATE" "$ROOT/artifacts"
 if [[ ! -f "$SOURCE/.source-commit" ]]; then
@@ -50,6 +50,7 @@ emcmake cmake -S "$SOURCE/llvm" -B "$STATE/wasm" "${COMMON[@]}" \
   -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten -DLLVM_DEFAULT_TARGET_TRIPLE=aarch64-none-unknown \
   -DLLVM_TABLEGEN="$STATE/host/bin/llvm-tblgen" -DLLVM_ENABLE_THREADS=OFF \
   -DLLVM_ENABLE_BACKTRACES=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF \
+  -DLLVM_INCLUDE_TOOLS=OFF \
   -DCMAKE_C_FLAGS_RELEASE='-Oz -DNDEBUG -flto' -DCMAKE_CXX_FLAGS_RELEASE='-Oz -DNDEBUG -flto'
 cmake --build "$STATE/wasm" --target LLVMAArch64Disassembler LLVMAArch64Desc LLVMAArch64Info -j "$JOBS"
 emcmake cmake -S "$ROOT/native" -B "$STATE/bridge" -G Ninja \

@@ -3,11 +3,15 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
+import { subtargetStorage } from './subtarget-storage.mjs';
 
 const [source, subtargetPath, output] = process.argv.slice(2);
 let cpp = await readFile(source, 'utf8');
-assert.equal(createHash('sha256').update(cpp).digest('hex'),
+// Reviewed LLVM 21.1.8 and 23.1.3 factory units; other revisions still require review.
+assert([
   '3b4c2232418874f815b9b39d7dd572f0ad7d6302bfd8a582e85245bdc50077d5',
+  '17c93eeb3addcdb3765b781e756a994789caca1fe26b7cc9da4c179c70cb61ff',
+].includes(createHash('sha256').update(cpp).digest('hex')),
   'Review the MC adapter when changing the pinned LLVM source');
 const marker = '// Force static initialization.';
 assert.equal(cpp.split(marker).length, 2);
@@ -23,9 +27,17 @@ function extract(pattern, label) {
   assert.equal(matches.length, 1, `Review generated ${label} after LLVM changes`);
   return matches[0][0];
 }
-const featureTable = extract(/extern const llvm::SubtargetFeatureKV AArch64FeatureKV\[\] = \{[\s\S]*?\n\};/g, 'feature table');
-const generic = extract(/^ \{ "generic", .* &\w+Model \},$/gm, 'generic CPU')
-  .replace(/&\w+Model/, '&MCSchedModel::Default');
+const modern = subtarget.includes('AArch64FeatureKVStorage =');
+let tables;
+if (modern) tables = subtargetStorage(subtarget, 'AArch64');
+else {
+  const features = extract(/extern const llvm::SubtargetFeatureKV AArch64FeatureKV\[\] = \{[\s\S]*?\n\};/g, 'feature table');
+  const generic = extract(/^ \{ "generic", .* &\w+Model \},$/gm, 'generic CPU')
+    .replace(/&\w+Model/, '&MCSchedModel::Default');
+  tables = `${features}
+extern const llvm::SubtargetSubTypeKV AArch64SubTypeKV[] = { ${generic} };
+extern const llvm::StringRef AArch64Names[] = { "generic" };`;
+}
 let mcClass = extract(/struct AArch64GenMCSubtargetInfo : public MCSubtargetInfo \{[\s\S]*?(?=static inline MCSubtargetInfo \*createAArch64MCSubtargetInfoImpl)/g, 'MC subtarget class');
 const resolver = /  unsigned resolveVariantSchedClass\([\s\S]*?\n  \}\n/g;
 assert.equal([...mcClass.matchAll(resolver)].length, 1);
@@ -34,15 +46,21 @@ let factory = extract(/static inline MCSubtargetInfo \*createAArch64MCSubtargetI
 const schedulingTables = 'AArch64WriteProcResTable, AArch64WriteLatencyTable, AArch64ReadAdvanceTable';
 assert(factory.includes(schedulingTables));
 factory = factory.replace(schedulingTables, 'nullptr, nullptr, nullptr');
+if (modern) {
+  // The fixed generic CPU has no aliases; avoid linking the full CPU alias database.
+  const cpuAlias = '    CPU = AArch64::resolveCPUAlias(CPU);\n';
+  assert(mcClass.includes(cpuAlias));
+  mcClass = mcClass.replace(cpuAlias, '');
+  const aliases = '  CPU = AArch64::resolveCPUAlias(CPU);\n' +
+    '  TuneCPU = AArch64::resolveCPUAlias(TuneCPU);\n';
+  assert(factory.includes(aliases));
+  factory = factory.replace(aliases, '');
+}
 const include = '#define GET_SUBTARGETINFO_MC_DESC\n#include "AArch64GenSubtargetInfo.inc"';
 assert(cpp.includes(include));
 cpp = cpp.replace(include, `
 namespace llvm {
-${featureTable}
-extern const llvm::SubtargetSubTypeKV AArch64SubTypeKV[] = {
-${generic}
-};
-extern const llvm::StringRef AArch64Names[] = { "generic" };
+${tables}
 ${mcClass}
 ${factory}
 } // namespace llvm

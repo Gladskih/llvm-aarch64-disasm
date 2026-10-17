@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import { createDisassembler, featureDefinitions, llvmVersion } from '../dist/index.js';
 
 const wasmBinary = await readFile(new URL('../dist/llvm-aarch64.wasm', import.meta.url));
+const pins = JSON.parse(await readFile(new URL('../upstream.json', import.meta.url)));
 const decoder = await createDisassembler({ wasmBinary });
 function word(value) {
   const bytes = new Uint8Array(4);
@@ -20,7 +21,7 @@ function leaves(expression) {
 }
 
 test('base instructions, aliases, MC operands, and version identity', () => {
-  assert.equal(llvmVersion, '21.1.8');
+  assert.equal(llvmVersion, pins.llvmVersion);
   for (const [word, mnemonic] of [[0xd503201f, 'nop'], [0x91000420, 'add'], [0xd65f03c0, 'ret']]) {
     const result = decode(word);
     assert.equal(result.status, 'success');

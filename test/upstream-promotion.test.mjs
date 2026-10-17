@@ -73,6 +73,7 @@ test("verified candidates merge, tag and retry without rewriting anything", {
   assert.equal(fixture.git("rev-parse", "origin/main"), fixture.sha);
   assert.equal(fixture.git("rev-parse", "v0.2.0^{}"), fixture.sha);
   const calls = await readFile(join(fixture.root, "calls.log"), "utf8");
+  fixture.git("push", "origin", "--delete", branch);
   const second = await promote(fixture);
   assert.equal(second.status, 0, second.stderr);
   assert.equal(await readFile(join(fixture.root, "calls.log"), "utf8"), calls);
@@ -167,5 +168,17 @@ test("a remote candidate that moved after CI cannot be published", {
   const result = await promote(fixture);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Candidate branch changed/);
+  assert.equal(fixture.git("tag", "--list"), "");
+});
+
+test("an unmerged candidate cannot be promoted after its branch is deleted", {
+  skip: process.platform === "win32",
+}, async context => {
+  const fixture = await repository(context);
+  fixture.git("push", "origin", "--delete", branch);
+  const result = await promote(fixture);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Candidate branch missing before merge/);
+  assert.equal(fixture.git("rev-parse", "origin/main"), fixture.base);
   assert.equal(fixture.git("tag", "--list"), "");
 });
