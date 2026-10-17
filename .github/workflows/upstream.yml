@@ -1,0 +1,49 @@
+name: Check upstream release
+on:
+  schedule:
+    - cron: "17 7 * * 3"
+  workflow_dispatch:
+    inputs:
+      check_only:
+        description: Report available updates without creating a candidate
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: upstream-check
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      UPSTREAM_CHECK_ONLY: ${{ inputs.check_only || false }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Configure temporary GitHub Actions identity
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Check stable upstream and prepare a pinned candidate
+        id: upstream
+        run: node scripts/check-upstream.mjs
+      - name: Build and publish candidate through the normal release gate
+        if: steps.upstream.outputs.branch != ''
+        env:
+          BRANCH: ${{ steps.upstream.outputs.branch }}
+        run: gh workflow run publish.yml --ref "$BRANCH" -f upstream=true
