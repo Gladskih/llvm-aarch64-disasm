@@ -39,7 +39,7 @@ function freeze<T>(value: T): T {
   return value;
 }
 const metadata = freeze(generated as Metadata);
-export const llvmVersion = '21.1.8';
+export const llvmVersion = "23.1.3";
 export const featureDefinitions: Readonly<Record<string, FeatureDefinition>> = metadata.features;
 const requirements = metadata.requirements.map(r => freeze({
   source: 'llvm-tablegen' as const, scope: 'opcode' as const, known: true, ...r,
