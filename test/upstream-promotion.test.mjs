@@ -55,6 +55,12 @@ async function installGithubCLI(fixture) {
     fs.appendFileSync("calls.log", JSON.stringify(args) + "\\n");
     if (args[1] === "list") process.stdout.write("[]");
     if (args[1] === "merge") cp.execFileSync("git", ["push", "origin", args[2] + ":main"]);
+    if (args[1] === "merge" && fs.existsSync("advance-on-merge")) {
+      const git = (...values) => cp.execFileSync("git", values, { encoding: "utf8" }).trim();
+      const sha = git("rev-parse", args[2]);
+      const moved = git("commit-tree", sha + "^{tree}", "-p", sha, "-m", "Manual work after merge");
+      git("push", "origin", moved + ":" + args[2]);
+    }
   `, { mode: 0o755 });
   return bin;
 }
@@ -73,7 +79,7 @@ test("verified candidates merge, tag and retry without rewriting anything", {
   assert.equal(fixture.git("rev-parse", "origin/main"), fixture.sha);
   assert.equal(fixture.git("rev-parse", "v0.2.0^{}"), fixture.sha);
   const calls = await readFile(join(fixture.root, "calls.log"), "utf8");
-  fixture.git("push", "origin", "--delete", branch);
+  assert.equal(fixture.git("ls-remote", "origin", "refs/heads/" + branch), "");
   const second = await promote(fixture);
   assert.equal(second.status, 0, second.stderr);
   assert.equal(await readFile(join(fixture.root, "calls.log"), "utf8"), calls);
@@ -181,4 +187,18 @@ test("an unmerged candidate cannot be promoted after its branch is deleted", {
   assert.match(result.stderr, /Candidate branch missing before merge/);
   assert.equal(fixture.git("rev-parse", "origin/main"), fixture.base);
   assert.equal(fixture.git("tag", "--list"), "");
+});
+
+test("manual work pushed after merge is preserved during candidate cleanup", {
+  skip: process.platform === "win32",
+}, async context => {
+  const fixture = await repository(context);
+  await writeFile(join(fixture.root, "advance-on-merge"), "");
+  const result = await promote(fixture);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Candidate changed after merge/);
+  const remote = fixture.git("ls-remote", "origin", "refs/heads/" + branch).split(/\s+/)[0];
+  assert.notEqual(remote, fixture.sha);
+  assert.equal(fixture.git("rev-parse", remote + "^"), fixture.sha);
+  assert.equal(fixture.git("rev-parse", "v0.2.0^{}"), fixture.sha);
 });
