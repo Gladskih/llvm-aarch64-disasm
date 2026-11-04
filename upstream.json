@@ -1,7 +1,7 @@
 {
-  "llvmVersion": "23.1.4",
-  "llvmCommit": "7a941dfb2877a0b8cf30323fefa85ad019e0b0f5",
-  "llvmArchiveSha256": "dd7ef5ae528cfe23ccf3cda68ab42c11e42657b079d43d7e0ddb1ff52840d0e0",
+  "llvmVersion": "23.1.5",
+  "llvmCommit": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
+  "llvmArchiveSha256": "d6dd769a5c981bc0ec5d877e55ca141e826aca1bca5c5e7d6128e70341dd3ae0",
   "emscriptenVersion": "4.0.23",
   "emsdkCommit": "c0bb220cb6e6f4e0fabb6f6db9efd53390ef5e56"
 }
