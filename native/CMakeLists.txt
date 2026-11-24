@@ -3,12 +3,12 @@ project(aarch64_disasm LANGUAGES C CXX)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../upstream.json" UPSTREAM_JSON)
 string(JSON PINNED_LLVM_VERSION GET "${UPSTREAM_JSON}" llvmVersion)
 find_package(LLVM ${PINNED_LLVM_VERSION} EXACT REQUIRED CONFIG)
-find_program(NODE_EXECUTABLE node REQUIRED)
 set(AARCH64_SOURCE "${LLVM_SOURCE_ROOT}/lib/Target/AArch64")
 set(AARCH64_GENERATED "${LLVM_BUILD_ROOT}/lib/Target/AArch64")
 set(MINIMAL_MC "${CMAKE_CURRENT_BINARY_DIR}/AArch64DisassemblyMC.cpp")
 add_custom_command(OUTPUT "${MINIMAL_MC}"
-  COMMAND "${NODE_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/prepare-mc.mjs"
+  # Resolve Node from PATH when Ninja runs, even after restoring a build cache.
+  COMMAND node "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/prepare-mc.mjs"
     "${AARCH64_SOURCE}/MCTargetDesc/AArch64MCTargetDesc.cpp"
     "${AARCH64_GENERATED}/AArch64GenSubtargetInfo.inc" "${MINIMAL_MC}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/prepare-mc.mjs"
